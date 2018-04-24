@@ -1,0 +1,134 @@
+---
+title: "Healtcare 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+#Data
+
+## Healthcare expenditures and source
+
+This is a project to explore the dynamics of the healthcare spending and sources of the expenditure in the US. The data is gathered from CMS NHE2016 data.
+
+### Initialize the data
+
+```{r read_data}
+nh <- readRDS('nh_final.rds')
+pop <- readRDS('population.rds')
+h_invest <- readRDS('health_investment.rds')
+```
+
+the dataset nh is the spending data from `r min(nh$year)` to `r max(nh$year)`. pop is the population data for this time, and h_invest is the health investment data which was excluded from nh to simplify the analysis since investments are not a component of expenditure.
+
+### Cleaning and tidying
+
+The data has messy naming conventions as well as structure. We start by first fixing the names in columns and reformating the factors in expenditures to make them easier to reference.
+
+```{r fix_names}
+# replace spaces with periods to ease reference
+# and change letters to all lowercase
+colnames(nh) <- nh %>% 
+  colnames() %>% 
+  make.names() %>%
+  tolower()
+# fix the special names
+nh <- nh %>% 
+  rename(workers.compensation = workers..compensation) %>% 
+  rename(other.federal.programs = other.federal.programs.) %>%
+  rename(other.state.and.local.programs = other.state.and.local.programs..)
+
+# reformat names
+nh$expenditure <- nh$expenditure %>% 
+  fct_relabel(~str_replace_all(.x, c("," = "", 
+                                     "  " = " ", 
+                                     " Expenditures" = "", 
+                                     "Total " = ""))) %>%
+  fct_relabel(make.names) %>% 
+  fct_relabel(tolower)
+
+nh
+```
+
+After that, transform the data from the wide format to the long format.
+
+```{r gather_columns}
+nh <- nh %>% 
+  gather(3:26, key='source', value='amount')
+
+nh <- nh %>% select(year, expenditure, source, amount)
+nh
+```
+
+Convert the sources into factors, and reorder the levels based on the original NHE data.
+
+```{r refactor_source_levels}
+nh$source <- as_factor(nh$source)
+
+# reorder levels according to NHE
+
+nh$source <- fct_relevel(nh$source,
+    'out.of.pocket',
+    'private.health.insurance',
+    'medicare',
+    'medicaid.federal',
+    'medicaid.state.and.local',
+    'chip.federal',
+    'chip.state.and.local',
+    'department.of.defense',
+    'department.of.veterans.affairs',
+    'worksite.health.care',
+    'other.private.revenues',
+    'indian.health.services',
+    'workers.compensation',
+    'general.assistance',
+    'maternal.federal',
+    'maternal.state.and.local',
+    'vocational.federal',
+    'vocational.state.and.local',
+    'other.federal.programs',
+    'samhsa',
+    "other.state.and.local.programs",
+    'school.health',
+    'public.health.federal.funds',
+    'public.health.state.local.funds'
+    )
+
+levels(nh$source)
+```
+
+This is the cleaned up table for the expenditures and sources for 2016
+
+```{r show_data, echo=FALSE}
+knitr::kable(
+  nh %>%
+    group_by(expenditure) %>%
+    filter(year == 2016) %>%
+    arrange(expenditure),
+  caption = "Select data from 2016"
+)
+```
+
+
+
+```{r expenditure_names}
+knitr::kable(
+  levels(nh$expenditure),
+  col.names = "Expenditures",
+  caption = "Expenditures"
+)
+```
+
+
+## Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
