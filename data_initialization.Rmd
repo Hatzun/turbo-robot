@@ -6,6 +6,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(feather)
 ```
 
 #Data
@@ -17,9 +18,9 @@ This is a project to explore the dynamics of the healthcare spending and sources
 ### Initialize the data
 
 ```{r read_data}
-nh <- readRDS('nh_final.rds')
-pop <- readRDS('population.rds')
-h_invest <- readRDS('health_investment.rds')
+nh <- read_feather('nh.feather')
+pop <- read_feather('pop.feather')
+h_invest <- read_feather('h_invest.feather')
 ```
 
 the dataset nh is the spending data from `r min(nh$year)` to `r max(nh$year)`. pop is the population data for this time, and h_invest is the health investment data which was excluded from nh to simplify the analysis since investments are not a component of expenditure.
